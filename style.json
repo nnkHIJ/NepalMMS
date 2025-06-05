@@ -15,7 +15,7 @@
     "kifuku-tiles": {
       "type": "raster",
       "tiles": [
-        "pmtiles://http://127.0.0.1:8080/data/kifuku.pmtiles/{z}/{x}/{y}.png"
+        "pmtiles://https://nnkhij.github.io/NepalMMS/data/kifuku.pmtiles/{z}/{x}/{y}.png"
       ],
       "minzoom": 12,
       "maxzoom": 20,
@@ -24,7 +24,7 @@
     "Higher-tiles": {
       "type": "raster",
       "tiles": [
-        "pmtiles://http://127.0.0.1:8080/data/Higher.pmtiles/{z}/{x}/{y}.png"
+        "pmtiles://https://nnkhij.github.io/NepalMMS/data/Higher.pmtiles/{z}/{x}/{y}.png"
       ],
       "minzoom": 12,
       "maxzoom": 20,
@@ -33,7 +33,7 @@
     "Lower-tiles": {
       "type": "raster",
       "tiles": [
-        "pmtiles://http://127.0.0.1:8080/data/Lower.pmtiles/{z}/{x}/{y}.png"
+        "pmtiles://https://nnkhij.github.io/NepalMMS/data/Lower.pmtiles/{z}/{x}/{y}.png"
       ],
       "minzoom": 12,
       "maxzoom": 20,
