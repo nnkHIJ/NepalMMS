@@ -5,14 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nepal_Biz_ver001</title>
     <link href="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.css" rel="stylesheet"/>
-
-
-
     <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.0/mapbox-gl-draw.css" rel="stylesheet" />
     <style>
-    body {
-        background-color: #000;
-    }
+        body {
+            background-color: #000;
+        }
         #map {
             width: 100%;
             height: 100vh;
@@ -24,6 +21,7 @@
             padding: 10px;
             border-radius: 3px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            z-index: 2;
         }
         .disp-layers {
             background-color: #ffffff;
@@ -33,6 +31,21 @@
             background-color: #ffffff;
             margin: 3px;
         }
+        #my-location-btn, #stop-follow-btn {
+            display:block;
+            margin-top:6px;
+            background: #fff;
+            border: 1px solid #999;
+            border-radius: 4px;
+            padding: 6px 14px;
+            font-size: 16px;
+            cursor: pointer;
+            opacity: 0.85;
+        }
+        #stop-follow-btn[disabled], #my-location-btn[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         #zoom-level {
             position: absolute;
             top: 10px;
@@ -41,16 +54,18 @@
             padding: 5px;
             border-radius: 3px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            z-index: 2;
         }
         #note-display {
             display: none;
             position: absolute;
-            background-color: rgba(255, 255, 255, 0.5); /* 半透明の背景色 */
+            background-color: rgba(255, 255, 255, 0.5);
             padding: 5px;
             border: 1px solid #ccc;
             border-radius: 3px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            white-space: nowrap; /* 改行されないようにする */
+            white-space: nowrap;
+            z-index: 1001;
         }
         #properties-display {
             position: absolute;
@@ -75,13 +90,14 @@
         #properties-display tr:nth-child(even) {
             background-color: #f2f2f2;
         }
-
     </style>
 </head>
 <body>
     <div id="map"></div>
     <div id="controls">
         <button id="toggle-layers-btn">Layer On/Off</button>
+        <button id="my-location-btn">📍</button>
+        <button id="stop-follow-btn" disabled>⏹️</button>
         <div id="layers-container" class="disp-layers" style="display: none;">
             <label>
                 <input type="checkbox" id="osm-layer-chk" checked>
@@ -117,19 +133,14 @@
             <br>
             <div id="attributes"></div>
         </div>
-
         <div id="note-form" style="display: none;">
             <label for="note-text">メモ:</label>
             <input type="text" id="note-text"/>
             <button id="save-note-btn">保存</button>
         </div>
-  
-      <div id="note-display" style="display: none;">
-
+        <div id="note-display" style="display: none;">
             <div id="note-content"></div>
         </div>
-
-
     </div>
     <div id="zoom-level">Zoom: 12</div>
     <div id="properties-display"></div>
@@ -171,7 +182,6 @@
             'Intensity-layer'
         ];
 
-
         document.querySelector('#toggle-layers-btn').addEventListener('click', () => {
             const layersContainer = document.getElementById('layers-container');
             if (layersContainer.style.display === 'none' || layersContainer.style.display === '') {
@@ -207,98 +217,37 @@
             const noteText = document.getElementById('note-text').value;
             if (selectedFeatureId) {
                 draw.setFeatureProperty(selectedFeatureId, 'note', noteText);
-
-        console.log(`Feature ID: ${selectedFeatureId}, Note: ${noteText}`);
-
                 document.getElementById('note-form').style.display = 'none';
                 alert('メモが保存されました');
             }
         });
 
-let selectedFeatureId;
+        let selectedFeatureId;
 
-map.on('draw.create', function (e) {
-    const feature = e.features[0];
-    if (feature.geometry.type === 'Point') {
-        selectedFeatureId = feature.id;
-        console.log(`Created Feature ID: ${selectedFeatureId}`);
-        document.getElementById('note-form').style.display = 'block';
-    }
-});
+        map.on('draw.create', function (e) {
+            const feature = e.features[0];
+            if (feature.geometry.type === 'Point') {
+                selectedFeatureId = feature.id;
+                document.getElementById('note-form').style.display = 'block';
+            }
+        });
 
-map.on('draw.update', function (e) {
-    const feature = e.features[0];
-    if (feature.geometry.type === 'Point') {
-        selectedFeatureId = feature.id;
-        console.log(`Updated Feature ID: ${selectedFeatureId}`);
-        document.getElementById('note-form').style.display = 'block';
-    }
-});
+        map.on('draw.update', function (e) {
+            const feature = e.features[0];
+            if (feature.geometry.type === 'Point') {
+                selectedFeatureId = feature.id;
+                document.getElementById('note-form').style.display = 'block';
+            }
+        });
 
-
-
-map.on('click', (e) => {
-    console.log(`クリック位置: 緯度 ${e.lngLat.lat}, 経度 ${e.lngLat.lng}`);
-    console.log(`クリック位置 (ピクセル): X ${e.point.x}, Y ${e.point.y}`);
-    
-    const features = draw.getAll().features.filter(feature => feature.geometry.type === 'Point');
-    if (features.length > 0) {
-        const nearestFeature = features.reduce((nearest, feature) => {
-            const distance = turf.distance(
-                turf.point(feature.geometry.coordinates),
-                turf.point([e.lngLat.lng, e.lngLat.lat])
-            );
-            return distance < nearest.distance ? { feature, distance } : nearest;
-        }, { feature: null, distance: Infinity });
-
-        if (nearestFeature.feature) {
-            const note = nearestFeature.feature.properties.note || '  ';
-            console.log(`Clicked Feature ID: ${nearestFeature.feature.id}, Note: ${note}`);
-
-            const coords = nearestFeature.feature.geometry.coordinates;
-            const point = map.project(coords); // ポイントフィーチャーの位置に表示
-
-            document.getElementById('note-content').innerText = note;
-            const noteDisplay = document.getElementById('note-display');
-            noteDisplay.style.display = 'block';
-            noteDisplay.style.position = 'absolute';
-            noteDisplay.style.left = `${point.x + 10}px`; // ポイントフィーチャーの少し右に表示
-            noteDisplay.style.top = `${point.y - 10}px`; // ポイントフィーチャーの少し上に表示
-        } else {
-            console.log('No point feature found at clicked point');
-            document.getElementById('note-display').style.display = 'none';
-        }
-    } else {
-        console.log('No feature found at clicked point');
-        document.getElementById('note-display').style.display = 'none';
-    }
-});
-
-       // メモボックスの表示位置を更新するための関数
         function updateNoteDisplayPosition(lngLat) {
             const noteDisplay = document.getElementById('note-display');
             const point = map.project(lngLat);
-            noteDisplay.style.left = `${point.x + 10}px`; // ポイントフィーチャーの少し右に表示
-            noteDisplay.style.top = `${point.y - 10}px`; // ポイントフィーチャーの少し上に表示
+            noteDisplay.style.left = `${point.x + 10}px`;
+            noteDisplay.style.top = `${point.y - 10}px`;
         }
 
-        let noteLngLat = null; // メモボックスの地理座標を保存する変数
-
-        map.on('zoom', () => {
-            if (noteLngLat) {
-                updateNoteDisplayPosition(noteLngLat);
-            }
-        });
-
-        map.on('move', () => {
-            if (noteLngLat) {
-                updateNoteDisplayPosition(noteLngLat);
-            }
-        });
-
-        // 例: ポイントクリック時にメモボックスを表示し、位置を保存する
-        map.on('click', handleMapClick);
-        map.on('touchend', handleMapClick);
+        let noteLngLat = null;
 
         function handleMapClick(e) {
             const features = draw.getAll().features.filter(feature => feature.geometry.type === 'Point');
@@ -325,61 +274,121 @@ map.on('click', (e) => {
             }
         }
 
+        map.on('zoom', () => {
+            if (noteLngLat) {
+                updateNoteDisplayPosition(noteLngLat);
+            }
+        });
+
+        map.on('move', () => {
+            if (noteLngLat) {
+                updateNoteDisplayPosition(noteLngLat);
+            }
+        });
+
+        map.on('click', handleMapClick);
+        map.on('touchend', handleMapClick);
+
         /*******************************************************************
          * 属性表示
          * *************************************************************** */
 
         map.on('click', (e) => {
             const features = map.queryRenderedFeatures(e.point);
-            console.log("Features found:", features);
-
-    if (features.length) {
-        features.forEach((feature) => {
-            const properties = feature.properties;
-            displayFeatureProperties(properties, e.point);
+            if (features.length) {
+                features.forEach((feature) => {
+                    const properties = feature.properties;
+                    displayFeatureProperties(properties, e.point);
+                });
+            }
         });
-    }
-});
 
         function displayFeatureProperties(properties, point) {
             const propertiesDisplay = document.getElementById('properties-display');
-
-            // エラーチェック
             if (!propertiesDisplay) {
                 console.error('Element with ID "properties-display" not found');
                 return;
             }
-
-
-
-
-
-            // 属性情報をHTMLに変換
             let propertiesHtml = '<table>';
             for (const key in properties) {
                 propertiesHtml += `<tr><td><strong>${key}</strong>:</td><td>${properties[key]}</td></tr>`;
             }
             propertiesHtml += '</table>';
-
             propertiesDisplay.innerHTML = propertiesHtml;
             propertiesDisplay.style.display = 'block';
             propertiesDisplay.style.left = `${point.x + 10}px`;
             propertiesDisplay.style.top = `${point.y + 10}px`;
-            console.log("Properties displayed:", propertiesHtml);
         }
 
-        // 属性情報を非表示にする関数
         function hideFeatureProperties() {
             const propertiesDisplay = document.getElementById('properties-display');
             propertiesDisplay.style.display = 'none';
         }
 
-        // 右クリックイベントを追加して属性情報を非表示にする
         map.on('contextmenu', (e) => {
             hideFeatureProperties();
         });
 
+        /********************** 現在地へジャンプ＋自動追従・停止機能 **********************/
+        let watchId = null;
+        let following = false;
 
+        const btnFollow = document.getElementById('my-location-btn');
+        const btnStop = document.getElementById('stop-follow-btn');
+
+        btnFollow.addEventListener('click', function() {
+            if ('geolocation' in navigator) {
+                // すでに監視中なら解除
+                if (watchId !== null) {
+                    navigator.geolocation.clearWatch(watchId);
+                    watchId = null;
+                }
+                let first = true;
+                following = true;
+                btnFollow.disabled = true;
+                btnStop.disabled = false;
+                watchId = navigator.geolocation.watchPosition(
+                    function(position) {
+                        const lng = position.coords.longitude;
+                        const lat = position.coords.latitude;
+                        if (window.myLocationMarker) {
+                            window.myLocationMarker.setLngLat([lng, lat]);
+                        } else {
+                            window.myLocationMarker = new maplibregl.Marker({color:"blue"})
+                                .setLngLat([lng, lat])
+                                .addTo(map);
+                        }
+                        if (first) {
+                            map.flyTo({center: [lng, lat], zoom: 17});
+                            first = false;
+                        } else {
+                            // 必要に応じて追従を続ける（高速移動も滑らか）
+                            map.jumpTo({center: [lng, lat]});
+                        }
+                    },
+                    function(error) {
+                        alert('位置情報の取得に失敗しました: ' + error.message);
+                        following = false;
+                        btnFollow.disabled = false;
+                        btnStop.disabled = true;
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            } else {
+                alert('この端末では位置情報が利用できません。');
+            }
+        });
+
+        btnStop.addEventListener('click', function() {
+            if (watchId !== null) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            following = false;
+            btnFollow.disabled = false;
+            btnStop.disabled = true;
+        });
+        /*******************************************************************/
     </script>
 </body>
 </html>
