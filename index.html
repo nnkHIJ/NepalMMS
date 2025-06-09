@@ -59,7 +59,7 @@
             border: 1px solid black;
             display: none;
             z-index: 1000;
-            max-width: 200px;
+            max-width: 220px;
             max-height: 150px;
             overflow-y: auto;
             font-size: 12px;
@@ -90,6 +90,12 @@
             <br>
             <br>
             <label>
+                <input type="checkbox" id="trj-layer-chk" checked>
+                Trajectory
+            </label>
+            <br>
+            <br>
+            <label>
                 <input type="checkbox" id="Higher-layer-chk" checked>
                 Higher data
             </label>
@@ -102,6 +108,11 @@
             <label>
                 <input type="checkbox" id="kifuku-layer-chk" checked>
                 SFD
+            </label>
+            <br>
+            <label>
+                <input type="checkbox" id="Intensity-layer-chk" checked>
+                Intensity
             </label>
             <br>
             <div id="attributes"></div>
@@ -153,9 +164,11 @@
 
         const layerIds = [
             'osm-layer',
+            'trj-layer',
             'kifuku-layer',
             'Higher-layer',
-            'Lower-layer'
+            'Lower-layer',
+            'Intensity-layer'
         ];
 
 
