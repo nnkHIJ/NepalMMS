@@ -64,9 +64,10 @@
       "source": "osm-tiles",
       "minzoom": 0,
       "maxzoom": 24,
+      "layout": { "visibility": "visible" },
       "paint": {
-    "raster-brightness-min": 0,
-    "raster-brightness-max": 0.5,
+        "raster-brightness-min": 0,
+        "raster-brightness-max": 0.5,
         "raster-saturation": -0.9
       }
     },
@@ -75,58 +76,63 @@
       "type": "raster",
       "source": "Intensity-tiles",
       "minzoom": 0,
-      "maxzoom": 24
+      "maxzoom": 24,
+      "layout": { "visibility": "none" }
     },
     {
       "id": "kifuku-layer",
       "type": "raster",
       "source": "kifuku-tiles",
       "minzoom": 0,
-      "maxzoom": 24
+      "maxzoom": 24,
+      "layout": { "visibility": "visible" }
     },
     {
       "id": "Lower-layer",
       "type": "raster",
       "source": "Lower-tiles",
       "minzoom": 0,
-      "maxzoom": 24
+      "maxzoom": 24,
+      "layout": { "visibility": "none" }
     },
     {
       "id": "Higher-layer",
       "type": "raster",
       "source": "Higher-tiles",
       "minzoom": 0,
-      "maxzoom": 24
+      "maxzoom": 24,
+      "layout": { "visibility": "none" }
     },
     {
       "id": "trj-layer",
       "type": "line",
       "source": "trj-source",
       "source-layer": "trj",
+      "layout": { "visibility": "none" },
       "paint": {
-       "line-color": [
-         "match",
-         ["%", ["to-number", ["slice", ["get", "ID"], -1]], 10],
-         0, "#e41a1c",
-         1, "#377eb8",
-         2, "#4daf4a",
-         3, "#984ea3",
-         4, "#ff7f00",
-         5, "#ffff33",
-         6, "#a65628",
-         7, "#f781bf",
-         8, "#999999",
-         9, "#1b9e77",
-         "#cccccc"
-       ],
-      "line-width": [
-        "interpolate",
-        ["linear"],
-        ["zoom"],
-        10, 1,
-        15, 3
-      ]
-     }
+        "line-color": [
+          "match",
+          ["%", ["to-number", ["slice", ["get", "ID"], -1]], 10],
+          0, "#e41a1c",
+          1, "#377eb8",
+          2, "#4daf4a",
+          3, "#984ea3",
+          4, "#ff7f00",
+          5, "#ffff33",
+          6, "#a65628",
+          7, "#f781bf",
+          8, "#999999",
+          9, "#1b9e77",
+          "#cccccc"
+        ],
+        "line-width": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          10, 1,
+          15, 3
+        ]
+      }
     }
   ]
 }

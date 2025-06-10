@@ -24,27 +24,18 @@
             z-index: 2;
         }
         .disp-layers {
-            background-color: #ffffff;
-            margin: 3px;
+            background-color: #fff;
+            margin: 3px 0 0 0;
+            padding: 6px;
         }
-        .disp-attributes {
-            background-color: #ffffff;
-            margin: 3px;
+        .disp-layers label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin-bottom: 2px;
         }
-        #my-location-btn, #stop-follow-btn {
-            display:block;
-            margin-top:6px;
-            background: #fff;
-            border: 1px solid #999;
-            border-radius: 4px;
-            padding: 6px 14px;
-            font-size: 16px;
-            cursor: pointer;
-            opacity: 0.85;
-        }
-        #stop-follow-btn[disabled], #my-location-btn[disabled] {
-            opacity: 0.5;
-            cursor: not-allowed;
+        #controls button {
+            margin-right: 4px;
         }
         #zoom-level {
             position: absolute;
@@ -95,48 +86,33 @@
 <body>
     <div id="map"></div>
     <div id="controls">
-        <button id="toggle-layers-btn">Layer On/Off</button>
-        <button id="my-location-btn">📍</button>
-        <button id="stop-follow-btn" disabled>⏹️</button>
-        <div id="layers-container" class="disp-layers" style="display: none;">
-            <label>
-                <input type="checkbox" id="osm-layer-chk" checked>
-                Open Street Map
-            </label>
-            <br>
-            <br>
-            <label>
-                <input type="checkbox" id="trj-layer-chk" checked>
-                Trajectory
-            </label>
-            <br>
-            <br>
-            <label>
-                <input type="checkbox" id="Higher-layer-chk" checked>
-                Higher data
-            </label>
-            <br>
-            <label>
-                <input type="checkbox" id="Lower-layer-chk" checked>
-                Lower data
-            </label>
-            <br>
-            <label>
-                <input type="checkbox" id="kifuku-layer-chk" checked>
-                SFD
-            </label>
-            <br>
-            <label>
-                <input type="checkbox" id="Intensity-layer-chk" checked>
-                Intensity
-            </label>
-            <br>
-            <div id="attributes"></div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;">
+            <button id="my-location-btn" title="現在地">📍</button>
+            <button id="stop-follow-btn" title="自動追従停止" disabled>⏹️</button>
         </div>
-        <div id="note-form" style="display: none;">
-            <label for="note-text">メモ:</label>
-            <input type="text" id="note-text"/>
-            <button id="save-note-btn">保存</button>
+        <div style="display:flex;gap:6px;margin-bottom:10px;">
+            <button id="export-geojson-btn">Export</button>
+            <button id="import-geojson-btn">Import</button>
+            <input type="file" id="import-geojson-input" accept=".geojson,.json" style="display:none;">
+        </div>
+        <div style="margin-bottom:6px;">
+            <button id="toggle-layers-btn" style="width:130px;">
+                Layer On/Off ▼
+            </button>
+            <div id="layers-container" class="disp-layers" style="display: none;">
+                <label><input type="checkbox" id="osm-layer-chk" checked> Open Street Map</label>
+                <label><input type="checkbox" id="trj-layer-chk"> Trajectory</label>
+                <label><input type="checkbox" id="Higher-layer-chk"> Higher data</label>
+                <label><input type="checkbox" id="Lower-layer-chk"> Lower data</label>
+                <label><input type="checkbox" id="kifuku-layer-chk" checked> SFD</label>
+                <label><input type="checkbox" id="Intensity-layer-chk"> Intensity</label>
+                <div id="attributes" style="margin-top:6px;"></div>
+            </div>
+        </div>
+        <div id="note-form" style="display: none; margin-top: 16px; padding:6px 0;">
+            <label for="note-text">Memo:</label>
+            <input type="text" id="note-text" style="width:100px;"/>
+            <button id="save-note-btn">Write</button>
         </div>
         <div id="note-display" style="display: none;">
             <div id="note-content"></div>
@@ -173,6 +149,60 @@
 
         map.addControl(draw);
 
+        // Export/Import
+        document.getElementById('export-geojson-btn').addEventListener('click', function() {
+            const data = draw.getAll();
+            data.features.forEach(f => {
+                if (f.geometry.type === 'LineString') {
+                    const length_km = turf.length(f, {units: 'kilometers'});
+                    const length_m = length_km * 1000;
+                    f.properties.distance_m = Number(length_m.toFixed(2));
+                }
+                if (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon') {
+                    const area = turf.area(f);
+                    f.properties.area_m2 = Number(area.toFixed(2));
+                }
+            });
+            const geojsonStr = JSON.stringify(data, null, 2);
+            const blob = new Blob([geojsonStr], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'drawings.geojson';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+        document.getElementById('import-geojson-btn').addEventListener('click', function() {
+            document.getElementById('import-geojson-input').click();
+        });
+        document.getElementById('import-geojson-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const geojson = JSON.parse(event.target.result);
+                    draw.deleteAll();
+                    if (geojson.type === 'FeatureCollection') {
+                        geojson.features.forEach(f => draw.add(f));
+                    } else if (geojson.type === 'Feature') {
+                        draw.add(geojson);
+                    } else {
+                        alert('GeoJSONの形式が正しくありません');
+                        return;
+                    }
+                    alert('インポート完了');
+                } catch(err) {
+                    alert('GeoJSONの読み込みに失敗しました');
+                }
+            };
+            reader.readAsText(file);
+            e.target.value = "";
+        });
+
+        // レイヤーリスト
         const layerIds = [
             'osm-layer',
             'trj-layer',
@@ -181,7 +211,6 @@
             'Lower-layer',
             'Intensity-layer'
         ];
-
         document.querySelector('#toggle-layers-btn').addEventListener('click', () => {
             const layersContainer = document.getElementById('layers-container');
             if (layersContainer.style.display === 'none' || layersContainer.style.display === '') {
@@ -190,19 +219,25 @@
                 layersContainer.style.display = 'none';
             }
         });
-
         const toggleLayer = (id) => {
             const isChecked = document.getElementById(`${id}-chk`).checked;
-            if (isChecked) {
-                map.setLayoutProperty(id, 'visibility', 'visible');
-            } else {
-                map.setLayoutProperty(id, 'visibility', 'none');
+            if (map.getLayer(id)) {
+                map.setLayoutProperty(id, 'visibility', isChecked ? 'visible' : 'none');
             }
-        }
-
+        };
         layerIds.forEach(lyrId => {
             document.querySelector(`#${lyrId}-chk`).addEventListener('change', () => {
                 toggleLayer(lyrId);
+            });
+        });
+
+        // ここが重要：スタイルロード完了後に可視状態を正しく反映
+        map.on('load', function() {
+            layerIds.forEach(lyrId => {
+                const chk = document.getElementById(`${lyrId}-chk`);
+                if (chk && map.getLayer(lyrId)) {
+                    map.setLayoutProperty(lyrId, 'visibility', chk.checked ? 'visible' : 'none');
+                }
             });
         });
 
@@ -210,33 +245,48 @@
             const zoom = map.getZoom().toFixed(2);
             document.getElementById('zoom-level').innerText = `Zoom: ${zoom}`;
         }
-
         map.on('zoom', updateZoomLevel);
         updateZoomLevel();
+
+        // Note関連
+        let selectedFeatureId;
         document.getElementById('save-note-btn').addEventListener('click', () => {
             const noteText = document.getElementById('note-text').value;
             if (selectedFeatureId) {
                 draw.setFeatureProperty(selectedFeatureId, 'note', noteText);
                 document.getElementById('note-form').style.display = 'none';
-                alert('メモが保存されました');
             }
         });
-
-        let selectedFeatureId;
-
         map.on('draw.create', function (e) {
             const feature = e.features[0];
             if (feature.geometry.type === 'Point') {
                 selectedFeatureId = feature.id;
                 document.getElementById('note-form').style.display = 'block';
             }
+            if (feature.geometry.type === 'LineString') {
+                const length_km = turf.length(feature, {units: 'kilometers'});
+                const length_m = length_km * 1000;
+                draw.setFeatureProperty(feature.id, 'distance_m', Math.round(length_m));
+            }
+            if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+                const area = turf.area(feature);
+                draw.setFeatureProperty(feature.id, 'area_m2', Math.round(area));
+            }
         });
-
         map.on('draw.update', function (e) {
             const feature = e.features[0];
             if (feature.geometry.type === 'Point') {
                 selectedFeatureId = feature.id;
                 document.getElementById('note-form').style.display = 'block';
+            }
+            if (feature.geometry.type === 'LineString') {
+                const length_km = turf.length(feature, {units: 'kilometers'});
+                const length_m = length_km * 1000;
+                draw.setFeatureProperty(feature.id, 'distance_m', Math.round(length_m));
+            }
+            if (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon') {
+                const area = turf.area(feature);
+                draw.setFeatureProperty(feature.id, 'area_m2', Math.round(area));
             }
         });
 
@@ -246,9 +296,60 @@
             noteDisplay.style.left = `${point.x + 10}px`;
             noteDisplay.style.top = `${point.y - 10}px`;
         }
-
         let noteLngLat = null;
 
+        // 各要素に個別Popup
+        let customPopups = [];
+        function showNearbyGeometriesPopups(lngLat) {
+            if (customPopups.length) {
+                customPopups.forEach(p => p.remove());
+                customPopups = [];
+            }
+            const threshold = 30;
+            const geojson = draw.getAll();
+            const pt = turf.point([lngLat.lng, lngLat.lat]);
+            // ライン
+            const lineFeatures = geojson.features.filter(f => f.geometry.type === 'LineString');
+            lineFeatures.forEach(feature => {
+                const nearest = turf.nearestPointOnLine(feature, pt, {units: 'meters'});
+                if (nearest.properties.dist <= threshold) {
+                    const length_km = turf.length(feature, {units: 'kilometers'});
+                    const length_m = length_km * 1000;
+                    const popup = new maplibregl.Popup({closeOnClick: false})
+                        .setLngLat(nearest.geometry.coordinates)
+                        .setHTML(`${length_m.toFixed(2)} m`)
+                        .addTo(map);
+                    customPopups.push(popup);
+                }
+            });
+            // ポリゴン
+            const polygonFeatures = geojson.features.filter(f => f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon');
+            polygonFeatures.forEach(feature => {
+                const inside = turf.booleanPointInPolygon(pt, feature);
+                let willShow = false, coords;
+                if (inside) {
+                    willShow = true;
+                    coords = [lngLat.lng, lngLat.lat];
+                } else {
+                    const centroid = turf.centroid(feature).geometry.coordinates;
+                    const dist = turf.distance(pt, turf.point(centroid), {units: 'meters'});
+                    if (dist <= threshold) {
+                        willShow = true;
+                        coords = centroid;
+                    }
+                }
+                if (willShow) {
+                    const area = turf.area(feature);
+                    const popup = new maplibregl.Popup({closeOnClick: false})
+                        .setLngLat(coords)
+                        .setHTML(`${area.toFixed(2)} m²`)
+                        .addTo(map);
+                    customPopups.push(popup);
+                }
+            });
+        }
+
+        let lastLineDistancePosition = null;
         function handleMapClick(e) {
             const features = draw.getAll().features.filter(feature => feature.geometry.type === 'Point');
             if (features.length > 0) {
@@ -272,26 +373,19 @@
             } else {
                 document.getElementById('note-display').style.display = 'none';
             }
+
+            showNearbyGeometriesPopups(e.lngLat);
+            lastLineDistancePosition = {lngLat: e.lngLat, point: e.point};
         }
-
-        map.on('zoom', () => {
-            if (noteLngLat) {
-                updateNoteDisplayPosition(noteLngLat);
-            }
-        });
-
-        map.on('move', () => {
-            if (noteLngLat) {
-                updateNoteDisplayPosition(noteLngLat);
-            }
-        });
-
         map.on('click', handleMapClick);
         map.on('touchend', handleMapClick);
 
-        /*******************************************************************
-         * 属性表示
-         * *************************************************************** */
+        map.on('zoom', () => {
+            if (noteLngLat) updateNoteDisplayPosition(noteLngLat);
+        });
+        map.on('move', () => {
+            if (noteLngLat) updateNoteDisplayPosition(noteLngLat);
+        });
 
         map.on('click', (e) => {
             const features = map.queryRenderedFeatures(e.point);
@@ -302,7 +396,6 @@
                 });
             }
         });
-
         function displayFeatureProperties(properties, point) {
             const propertiesDisplay = document.getElementById('properties-display');
             if (!propertiesDisplay) {
@@ -319,26 +412,20 @@
             propertiesDisplay.style.left = `${point.x + 10}px`;
             propertiesDisplay.style.top = `${point.y + 10}px`;
         }
-
         function hideFeatureProperties() {
             const propertiesDisplay = document.getElementById('properties-display');
             propertiesDisplay.style.display = 'none';
         }
-
         map.on('contextmenu', (e) => {
             hideFeatureProperties();
         });
 
-        /********************** 現在地へジャンプ＋自動追従・停止機能 **********************/
         let watchId = null;
         let following = false;
-
         const btnFollow = document.getElementById('my-location-btn');
         const btnStop = document.getElementById('stop-follow-btn');
-
         btnFollow.addEventListener('click', function() {
             if ('geolocation' in navigator) {
-                // すでに監視中なら解除
                 if (watchId !== null) {
                     navigator.geolocation.clearWatch(watchId);
                     watchId = null;
@@ -362,7 +449,6 @@
                             map.flyTo({center: [lng, lat], zoom: 17});
                             first = false;
                         } else {
-                            // 必要に応じて追従を続ける（高速移動も滑らか）
                             map.jumpTo({center: [lng, lat]});
                         }
                     },
@@ -378,7 +464,6 @@
                 alert('この端末では位置情報が利用できません。');
             }
         });
-
         btnStop.addEventListener('click', function() {
             if (watchId !== null) {
                 navigator.geolocation.clearWatch(watchId);
@@ -388,7 +473,6 @@
             btnFollow.disabled = false;
             btnStop.disabled = true;
         });
-        /*******************************************************************/
     </script>
 </body>
 </html>
