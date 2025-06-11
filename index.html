@@ -231,7 +231,6 @@
             });
         });
 
-        // ここが重要：スタイルロード完了後に可視状態を正しく反映
         map.on('load', function() {
             layerIds.forEach(lyrId => {
                 const chk = document.getElementById(`${lyrId}-chk`);
@@ -244,7 +243,7 @@
         const updateZoomLevel = () => {
             const zoom = map.getZoom().toFixed(2);
             document.getElementById('zoom-level').innerText = `Zoom: ${zoom}`;
-        }
+        };
         map.on('zoom', updateZoomLevel);
         updateZoomLevel();
 
@@ -261,6 +260,7 @@
             const feature = e.features[0];
             if (feature.geometry.type === 'Point') {
                 selectedFeatureId = feature.id;
+                document.getElementById('note-text').value = '';
                 document.getElementById('note-form').style.display = 'block';
             }
             if (feature.geometry.type === 'LineString') {
@@ -277,6 +277,7 @@
             const feature = e.features[0];
             if (feature.geometry.type === 'Point') {
                 selectedFeatureId = feature.id;
+                document.getElementById('note-text').value = '';
                 document.getElementById('note-form').style.display = 'block';
             }
             if (feature.geometry.type === 'LineString') {
@@ -351,6 +352,7 @@
 
         let lastLineDistancePosition = null;
         function handleMapClick(e) {
+            // ノート機能
             const features = draw.getAll().features.filter(feature => feature.geometry.type === 'Point');
             if (features.length > 0) {
                 const nearestFeature = features.reduce((nearest, feature) => {
@@ -376,9 +378,25 @@
 
             showNearbyGeometriesPopups(e.lngLat);
             lastLineDistancePosition = {lngLat: e.lngLat, point: e.point};
+
+            // === 属性情報の表示: ±10px範囲内の"draw系を除外した"featureのみ ===
+            const r = 10;
+            const bbox = [
+                [e.point.x - r, e.point.y - r],
+                [e.point.x + r, e.point.y + r]
+            ];
+            const allFeatures = map.queryRenderedFeatures(bbox);
+            // draw系レイヤを排除
+            const filteredFeatures = allFeatures.filter(f =>
+                f.layer && !/^gl-draw-/.test(f.layer.id)
+            );
+            if (filteredFeatures.length) {
+                displayFeatureProperties(filteredFeatures[0].properties, e.point);
+            } else {
+                hideFeatureProperties();
+            }
         }
         map.on('click', handleMapClick);
-        map.on('touchend', handleMapClick);
 
         map.on('zoom', () => {
             if (noteLngLat) updateNoteDisplayPosition(noteLngLat);
@@ -387,21 +405,10 @@
             if (noteLngLat) updateNoteDisplayPosition(noteLngLat);
         });
 
-        map.on('click', (e) => {
-            const features = map.queryRenderedFeatures(e.point);
-            if (features.length) {
-                features.forEach((feature) => {
-                    const properties = feature.properties;
-                    displayFeatureProperties(properties, e.point);
-                });
-            }
-        });
+        // 属性情報パネル
         function displayFeatureProperties(properties, point) {
             const propertiesDisplay = document.getElementById('properties-display');
-            if (!propertiesDisplay) {
-                console.error('Element with ID "properties-display" not found');
-                return;
-            }
+            if (!propertiesDisplay) return;
             let propertiesHtml = '<table>';
             for (const key in properties) {
                 propertiesHtml += `<tr><td><strong>${key}</strong>:</td><td>${properties[key]}</td></tr>`;
@@ -416,8 +423,23 @@
             const propertiesDisplay = document.getElementById('properties-display');
             propertiesDisplay.style.display = 'none';
         }
+        // PC: 右クリックで非表示
         map.on('contextmenu', (e) => {
             hideFeatureProperties();
+        });
+        // モバイル: 長押しで非表示
+        let longTouchTimer = null;
+        map.on('touchstart', function(e) {
+            if (longTouchTimer) clearTimeout(longTouchTimer);
+            longTouchTimer = setTimeout(function() {
+                hideFeatureProperties();
+            }, 600);
+        });
+        map.on('touchend', function(e) {
+            if (longTouchTimer) clearTimeout(longTouchTimer);
+        });
+        map.on('touchmove', function(e) {
+            if (longTouchTimer) clearTimeout(longTouchTimer);
         });
 
         let watchId = null;
