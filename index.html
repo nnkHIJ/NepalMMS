@@ -398,6 +398,16 @@
         }
         map.on('click', handleMapClick);
 
+        // ★ 追加：スマホでもタップで各種情報が表示されるように
+        map.on('touchend', function(e) {
+            // 1本指、短タップのみ（ピンチやスワイプ排除）
+            if (e.points && e.points.length === 1) {
+                const point = (e.points && e.points[0]) || e.point;
+                const lngLat = (e.lngLats && e.lngLats[0]) || e.lngLat;
+                handleMapClick({ point, lngLat, preventDefault: ()=>{} });
+            }
+        });
+
         map.on('zoom', () => {
             if (noteLngLat) updateNoteDisplayPosition(noteLngLat);
         });
