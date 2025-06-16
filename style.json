@@ -10,7 +10,7 @@
       "minzoom": 1,
       "maxzoom": 22,
       "tileSize": 256,
-      "attribution": "¬© <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a> contributors"
+      "attribution": "è¢Ì <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\">OpenStreetMap</a> contributors"
     },
     "kifuku-tiles": {
       "type": "raster",
@@ -27,7 +27,7 @@
         "pmtiles://https://nnkhij.github.io/NepalMMS/data/Higher.pmtiles/{z}/{x}/{y}.png"
       ],
       "minzoom": 12,
-      "maxzoom": 20,
+      "maxzoom": 22,
       "tileSize": 256
     },
     "Lower-tiles": {
@@ -36,7 +36,7 @@
         "pmtiles://https://nnkhij.github.io/NepalMMS/data/Lower.pmtiles/{z}/{x}/{y}.png"
       ],
       "minzoom": 12,
-      "maxzoom": 20,
+      "maxzoom": 22,
       "tileSize": 256
     },
     "Intensity-tiles": {
@@ -77,7 +77,10 @@
       "source": "Intensity-tiles",
       "minzoom": 0,
       "maxzoom": 24,
-      "layout": { "visibility": "none" }
+      "layout": { "visibility": "none" },
+      "paint": {
+        "raster-resampling": "nearest"
+      }
     },
     {
       "id": "kifuku-layer",
@@ -85,7 +88,10 @@
       "source": "kifuku-tiles",
       "minzoom": 0,
       "maxzoom": 24,
-      "layout": { "visibility": "visible" }
+      "layout": { "visibility": "visible" },
+      "paint": {
+        "raster-resampling": "nearest"
+      }
     },
     {
       "id": "Lower-layer",
@@ -93,7 +99,10 @@
       "source": "Lower-tiles",
       "minzoom": 0,
       "maxzoom": 24,
-      "layout": { "visibility": "none" }
+      "layout": { "visibility": "none" },
+      "paint": {
+        "raster-resampling": "nearest"
+      }
     },
     {
       "id": "Higher-layer",
@@ -101,7 +110,10 @@
       "source": "Higher-tiles",
       "minzoom": 0,
       "maxzoom": 24,
-      "layout": { "visibility": "none" }
+      "layout": { "visibility": "none" },
+      "paint": {
+        "raster-resampling": "nearest"
+      }
     },
     {
       "id": "trj-layer",

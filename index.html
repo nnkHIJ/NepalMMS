@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nepal_Biz_ver001</title>
-    <link href="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.css" rel="stylesheet"/>
-    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.0/mapbox-gl-draw.css" rel="stylesheet" />
+    <link href="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.css" rel="stylesheet"/>
+    <link href="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.2/mapbox-gl-draw.css" rel="stylesheet" />
     <style>
         body {
             background-color: #000;
@@ -21,7 +21,7 @@
             padding: 10px;
             border-radius: 3px;
             box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-            z-index: 2;
+            z-index: 1 !important; /* ← ここをDrawより下に */
         }
         .disp-layers {
             background-color: #fff;
@@ -81,6 +81,15 @@
         #properties-display tr:nth-child(even) {
             background-color: #f2f2f2;
         }
+        /* -- Drawボタンを常に前面・クリック可能に -- */
+        .maplibregl-ctrl-top-left,
+        .mapboxgl-ctrl-top-left {
+            z-index: 10000 !important;
+        }
+        .mapbox-gl-draw_ctrl-draw-btn {
+            pointer-events: auto !important;
+            z-index: 10001 !important;
+        }
     </style>
 </head>
 <body>
@@ -121,18 +130,19 @@
     <div id="zoom-level">Zoom: 12</div>
     <div id="properties-display"></div>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf/turf.min.js"></script>
-    <script src="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/maplibre-gl@5.6.0/dist/maplibre-gl.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/pmtiles/dist/pmtiles.js"></script>
-    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.2.0/mapbox-gl-draw.js"></script>
+    <script src="https://api.mapbox.com/mapbox-gl-js/plugins/mapbox-gl-draw/v1.4.2/mapbox-gl-draw.js"></script>
     <script>
         const protocol = new pmtiles.Protocol();
         maplibregl.addProtocol('pmtiles', protocol.tile);
 
         const map = new maplibregl.Map({
             container: 'map',
-            style: 'style.json',
+            style: 'style.json', // ★ 本運用では必ずstyle.jsonが存在していることを確認してください
             center: [85.311, 27.678],
-            zoom: 16
+            zoom: 16,
+            maxZoom: 24 
         });
 
         map.addControl(new maplibregl.NavigationControl());
@@ -147,7 +157,7 @@
             }
         });
 
-        map.addControl(draw);
+        map.addControl(draw, 'bottom-left');
 
         // Export/Import
         document.getElementById('export-geojson-btn').addEventListener('click', function() {
