@@ -39,8 +39,8 @@
         }
         #zoom-level {
             position: absolute;
-            top: 10px;
-            right: 50px;
+            bottom: 10px;
+            left: 50px;
             background-color: white;
             padding: 5px;
             border-radius: 3px;
@@ -89,6 +89,20 @@
         .mapbox-gl-draw_ctrl-draw-btn {
             pointer-events: auto !important;
             z-index: 10001 !important;
+        }
+        .maplibregl-canvas.mapbox-gl-draw_polygon,
+        .maplibregl-canvas.mapbox-gl-draw_line_string,
+        .maplibregl-canvas.mapbox-gl-draw_line,
+        .maplibregl-canvas.mapbox-gl-draw_point,
+        .mapboxgl-canvas.mapbox-gl-draw_polygon,
+        .mapboxgl-canvas.mapbox-gl-draw_line_string,
+        .mapboxgl-canvas.mapbox-gl-draw_line,
+        .mapboxgl-canvas.mapbox-gl-draw_point {
+            cursor: default !important;
+        }
+        .maplibregl-canvas,
+        .mapboxgl-canvas {
+            cursor: default !important;
         }
     </style>
 </head>
@@ -157,7 +171,7 @@
             }
         });
 
-        map.addControl(draw, 'bottom-left');
+        map.addControl(draw, 'top-right');
 
         // Export/Import
         document.getElementById('export-geojson-btn').addEventListener('click', function() {
